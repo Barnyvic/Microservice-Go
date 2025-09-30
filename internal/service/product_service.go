@@ -1,10 +1,8 @@
 package service
 
 import (
-	"errors"
-
-	"github.com/google/uuid"
 	"github.com/microservice-go/product-service/internal/constants"
+	apperrors "github.com/microservice-go/product-service/internal/errors"
 	"github.com/microservice-go/product-service/internal/models"
 	"github.com/microservice-go/product-service/internal/repository"
 )
@@ -28,7 +26,7 @@ func NewProductService(repo repository.ProductRepository) ProductService {
 	return &productService{repo: repo}
 }
 
-// CreateProduct creates a new product
+// CreateProduct creates a new product with validation
 func (s *productService) CreateProduct(name, description string, price float64, productType string) (*models.Product, error) {
 	if err := validateProductInput(name, price, productType); err != nil {
 		return nil, err
@@ -42,7 +40,7 @@ func (s *productService) CreateProduct(name, description string, price float64, 
 	}
 
 	if err := s.repo.Create(product); err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError("create product", err)
 	}
 
 	return product, nil
@@ -50,19 +48,29 @@ func (s *productService) CreateProduct(name, description string, price float64, 
 
 // GetProduct retrieves a product by ID
 func (s *productService) GetProduct(id string) (*models.Product, error) {
-	productID, err := uuid.Parse(id)
+	productID, err := parseProductID(id)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidProductID)
+		return nil, err
 	}
 
-	return s.repo.GetByID(productID)
+	product, err := s.repo.GetByID(productID)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("Product", id)
+	}
+
+	return product, nil
 }
 
 // UpdateProduct updates an existing product
 func (s *productService) UpdateProduct(id, name, description string, price float64, productType string) (*models.Product, error) {
-	productID, err := uuid.Parse(id)
+	productID, err := parseProductID(id)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidProductID)
+		return nil, err
+	}
+
+	// Verify product exists
+	if _, err := s.repo.GetByID(productID); err != nil {
+		return nil, apperrors.NewNotFoundError("Product", id)
 	}
 
 	if err := validateProductInput(name, price, productType); err != nil {
@@ -78,7 +86,7 @@ func (s *productService) UpdateProduct(id, name, description string, price float
 	}
 
 	if err := s.repo.Update(product); err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError("update product", err)
 	}
 
 	return s.repo.GetByID(productID)
@@ -86,32 +94,49 @@ func (s *productService) UpdateProduct(id, name, description string, price float
 
 // DeleteProduct deletes a product by ID
 func (s *productService) DeleteProduct(id string) error {
-	productID, err := uuid.Parse(id)
+	productID, err := parseProductID(id)
 	if err != nil {
-		return errors.New(constants.ErrInvalidProductID)
+		return err
 	}
 
-	return s.repo.Delete(productID)
+	// Verify product exists before deletion
+	if _, err := s.repo.GetByID(productID); err != nil {
+		return apperrors.NewNotFoundError("Product", id)
+	}
+
+	if err := s.repo.Delete(productID); err != nil {
+		return apperrors.NewDatabaseError("delete product", err)
+	}
+
+	return nil
 }
 
-// ListProducts retrieves a list of products with optional filtering
+// ListProducts retrieves a list of products with optional filtering and pagination
 func (s *productService) ListProducts(productType string, page, pageSize int) ([]models.Product, int64, error) {
 	page = normalizePage(page)
 	pageSize = normalizePageSize(pageSize)
 
-	return s.repo.List(productType, page, pageSize)
+	products, total, err := s.repo.List(productType, page, pageSize)
+	if err != nil {
+		return nil, 0, apperrors.NewDatabaseError("list products", err)
+	}
+
+	return products, total, nil
 }
 
 // validateProductInput validates product input fields
 func validateProductInput(name string, price float64, productType string) error {
 	if name == "" {
-		return errors.New(constants.ErrProductNameRequired)
+		return apperrors.NewValidationError("name", "product name is required")
+	}
+	if len(name) > 255 {
+		return apperrors.NewValidationError("name", "product name must be less than 255 characters")
 	}
 	if price < 0 {
-		return errors.New(constants.ErrPriceNegative)
+		return apperrors.NewValidationError("price", "price cannot be negative")
 	}
 	if productType == "" {
-		return errors.New(constants.ErrProductTypeRequired)
+		return apperrors.NewValidationError("productType", "product type is required")
 	}
 	return nil
 }

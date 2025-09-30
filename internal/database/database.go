@@ -3,12 +3,20 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 
+	apperrors "github.com/microservice-go/product-service/internal/errors"
 	"github.com/microservice-go/product-service/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+)
+
+const (
+	maxOpenConns    = 25
+	maxIdleConns    = 5
+	connMaxLifetime = 5 * time.Minute
 )
 
 // Config holds database configuration
@@ -22,36 +30,61 @@ type Config struct {
 	SSLMode  string
 }
 
-// NewDatabase creates a new database connection
+// NewDatabase creates a new database connection with proper configuration
 func NewDatabase(config Config) (*gorm.DB, error) {
-	var db *gorm.DB
-	var err error
+	if config.Driver == "" {
+		return nil, apperrors.NewValidationError("driver", "database driver is required")
+	}
 
 	gormConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	}
 
+	var db *gorm.DB
+	var err error
+
 	switch config.Driver {
 	case "postgres":
+		if err := validatePostgresConfig(config); err != nil {
+			return nil, err
+		}
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 			config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode)
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
 	case "sqlite":
+		if config.DBName == "" {
+			return nil, apperrors.NewValidationError("dbname", "database name is required for SQLite")
+		}
 		db, err = gorm.Open(sqlite.Open(config.DBName), gormConfig)
 	default:
-		return nil, fmt.Errorf("unsupported database driver: %s", config.Driver)
+		return nil, fmt.Errorf("unsupported database driver: %s (supported: postgres, sqlite)", config.Driver)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, apperrors.NewDatabaseError("connection", err)
 	}
 
-	log.Println("Database connection established")
+	// Configure connection pool for better performance
+	if config.Driver == "postgres" {
+		sqlDB, err := db.DB()
+		if err != nil {
+			return nil, apperrors.NewDatabaseError("pool configuration", err)
+		}
+		sqlDB.SetMaxOpenConns(maxOpenConns)
+		sqlDB.SetMaxIdleConns(maxIdleConns)
+		sqlDB.SetConnMaxLifetime(connMaxLifetime)
+	}
+
+	log.Printf("✓ Database connection established (driver: %s)", config.Driver)
 	return db, nil
 }
 
 // RunMigrations runs database migrations
 func RunMigrations(db *gorm.DB) error {
+	if db == nil {
+		return apperrors.NewValidationError("db", "database connection is nil")
+	}
+
 	log.Println("Running database migrations...")
 
 	err := db.AutoMigrate(
@@ -60,9 +93,23 @@ func RunMigrations(db *gorm.DB) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
+		return apperrors.NewDatabaseError("migration", err)
 	}
 
-	log.Println("Database migrations completed successfully")
+	log.Println("✓ Database migrations completed successfully")
+	return nil
+}
+
+// validatePostgresConfig validates PostgreSQL configuration
+func validatePostgresConfig(config Config) error {
+	if config.Host == "" {
+		return apperrors.NewValidationError("host", "host is required for PostgreSQL")
+	}
+	if config.User == "" {
+		return apperrors.NewValidationError("user", "user is required for PostgreSQL")
+	}
+	if config.DBName == "" {
+		return apperrors.NewValidationError("dbname", "database name is required for PostgreSQL")
+	}
 	return nil
 }

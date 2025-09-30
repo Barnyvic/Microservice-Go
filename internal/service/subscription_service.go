@@ -1,10 +1,8 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/google/uuid"
-	"github.com/microservice-go/product-service/internal/constants"
+	apperrors "github.com/microservice-go/product-service/internal/errors"
 	"github.com/microservice-go/product-service/internal/models"
 	"github.com/microservice-go/product-service/internal/repository"
 )
@@ -32,21 +30,20 @@ func NewSubscriptionService(repo repository.SubscriptionRepository, productRepo 
 	}
 }
 
-// CreateSubscriptionPlan creates a new subscription plan
+// CreateSubscriptionPlan creates a new subscription plan with validation
 func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string, duration int, price float64) (*models.SubscriptionPlan, error) {
 	if err := validateSubscriptionInput(planName, duration, price); err != nil {
 		return nil, err
 	}
 
-	prodID, err := uuid.Parse(productID)
+	prodID, err := parseProductID(productID)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidProductID)
+		return nil, err
 	}
 
 	// Verify product exists
-	_, err = s.productRepo.GetByID(prodID)
-	if err != nil {
-		return nil, errors.New(constants.ErrProductNotFound)
+	if _, err := s.productRepo.GetByID(prodID); err != nil {
+		return nil, apperrors.NewNotFoundError("Product", productID)
 	}
 
 	plan := &models.SubscriptionPlan{
@@ -57,7 +54,7 @@ func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string,
 	}
 
 	if err := s.repo.Create(plan); err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError("create subscription plan", err)
 	}
 
 	return plan, nil
@@ -65,34 +62,43 @@ func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string,
 
 // GetSubscriptionPlan retrieves a subscription plan by ID
 func (s *subscriptionService) GetSubscriptionPlan(id string) (*models.SubscriptionPlan, error) {
-	planID, err := uuid.Parse(id)
+	planID, err := parsePlanID(id)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidPlanID)
+		return nil, err
 	}
 
-	return s.repo.GetByID(planID)
+	plan, err := s.repo.GetByID(planID)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("SubscriptionPlan", id)
+	}
+
+	return plan, nil
 }
 
 // UpdateSubscriptionPlan updates an existing subscription plan
 func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName string, duration int, price float64) (*models.SubscriptionPlan, error) {
-	planID, err := uuid.Parse(id)
+	planID, err := parsePlanID(id)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidPlanID)
+		return nil, err
+	}
+
+	// Verify plan exists
+	if _, err := s.repo.GetByID(planID); err != nil {
+		return nil, apperrors.NewNotFoundError("SubscriptionPlan", id)
 	}
 
 	if err := validateSubscriptionInput(planName, duration, price); err != nil {
 		return nil, err
 	}
 
-	prodID, err := uuid.Parse(productID)
+	prodID, err := parseProductID(productID)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidProductID)
+		return nil, err
 	}
 
 	// Verify product exists
-	_, err = s.productRepo.GetByID(prodID)
-	if err != nil {
-		return nil, errors.New(constants.ErrProductNotFound)
+	if _, err := s.productRepo.GetByID(prodID); err != nil {
+		return nil, apperrors.NewNotFoundError("Product", productID)
 	}
 
 	plan := &models.SubscriptionPlan{
@@ -104,7 +110,7 @@ func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName str
 	}
 
 	if err := s.repo.Update(plan); err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError("update subscription plan", err)
 	}
 
 	return s.repo.GetByID(planID)
@@ -112,34 +118,68 @@ func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName str
 
 // DeleteSubscriptionPlan deletes a subscription plan by ID
 func (s *subscriptionService) DeleteSubscriptionPlan(id string) error {
-	planID, err := uuid.Parse(id)
+	planID, err := parsePlanID(id)
 	if err != nil {
-		return errors.New(constants.ErrInvalidPlanID)
+		return err
 	}
 
-	return s.repo.Delete(planID)
+	// Verify plan exists before deletion
+	if _, err := s.repo.GetByID(planID); err != nil {
+		return apperrors.NewNotFoundError("SubscriptionPlan", id)
+	}
+
+	if err := s.repo.Delete(planID); err != nil {
+		return apperrors.NewDatabaseError("delete subscription plan", err)
+	}
+
+	return nil
 }
 
 // ListSubscriptionPlans retrieves all subscription plans for a product
 func (s *subscriptionService) ListSubscriptionPlans(productID string) ([]models.SubscriptionPlan, error) {
-	prodID, err := uuid.Parse(productID)
+	prodID, err := parseProductID(productID)
 	if err != nil {
-		return nil, errors.New(constants.ErrInvalidProductID)
+		return nil, err
 	}
 
-	return s.repo.ListByProductID(prodID)
+	plans, err := s.repo.ListByProductID(prodID)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError("list subscription plans", err)
+	}
+
+	return plans, nil
+}
+
+// parsePlanID parses and validates a subscription plan ID
+func parsePlanID(id string) (uuid.UUID, error) {
+	if id == "" {
+		return uuid.Nil, apperrors.NewValidationError("id", "subscription plan ID is required")
+	}
+
+	planID, err := uuid.Parse(id)
+	if err != nil {
+		return uuid.Nil, apperrors.NewValidationError("id", "invalid subscription plan ID format")
+	}
+
+	return planID, nil
 }
 
 // validateSubscriptionInput validates subscription plan input fields
 func validateSubscriptionInput(planName string, duration int, price float64) error {
 	if planName == "" {
-		return errors.New(constants.ErrPlanNameRequired)
+		return apperrors.NewValidationError("planName", "plan name is required")
+	}
+	if len(planName) > 255 {
+		return apperrors.NewValidationError("planName", "plan name must be less than 255 characters")
 	}
 	if duration <= 0 {
-		return errors.New(constants.ErrDurationPositive)
+		return apperrors.NewValidationError("duration", "duration must be positive")
+	}
+	if duration > 3650 { // Max 10 years
+		return apperrors.NewValidationError("duration", "duration cannot exceed 3650 days")
 	}
 	if price < 0 {
-		return errors.New(constants.ErrPriceNegative)
+		return apperrors.NewValidationError("price", "price cannot be negative")
 	}
 	return nil
 }

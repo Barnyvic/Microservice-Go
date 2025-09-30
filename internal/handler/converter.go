@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"strings"
-
-	"github.com/microservice-go/product-service/internal/constants"
+	apperrors "github.com/microservice-go/product-service/internal/errors"
 	"github.com/microservice-go/product-service/internal/models"
 	productpb "github.com/microservice-go/product-service/proto/product"
 	subscriptionpb "github.com/microservice-go/product-service/proto/subscription"
@@ -14,6 +12,10 @@ import (
 
 // toProductProto converts a Product model to a Product protobuf message
 func toProductProto(product *models.Product) *productpb.Product {
+	if product == nil {
+		return nil
+	}
+
 	return &productpb.Product{
 		Id:          product.ID.String(),
 		Name:        product.Name,
@@ -27,6 +29,10 @@ func toProductProto(product *models.Product) *productpb.Product {
 
 // toSubscriptionPlanProto converts a SubscriptionPlan model to a SubscriptionPlan protobuf message
 func toSubscriptionPlanProto(plan *models.SubscriptionPlan) *subscriptionpb.SubscriptionPlan {
+	if plan == nil {
+		return nil
+	}
+
 	return &subscriptionpb.SubscriptionPlan{
 		Id:        plan.ID.String(),
 		ProductId: plan.ProductID.String(),
@@ -44,30 +50,20 @@ func mapServiceError(err error) error {
 		return nil
 	}
 
-	errMsg := err.Error()
+	// Check for custom error types
+	if apperrors.IsValidationError(err) {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	// Map validation errors to InvalidArgument
-	switch errMsg {
-	case constants.ErrProductNameRequired,
-		constants.ErrPriceNegative,
-		constants.ErrProductTypeRequired,
-		constants.ErrPlanNameRequired,
-		constants.ErrDurationPositive,
-		constants.ErrInvalidProductID,
-		constants.ErrInvalidPlanID:
-		return status.Error(codes.InvalidArgument, errMsg)
+	if apperrors.IsNotFoundError(err) {
+		return status.Error(codes.NotFound, err.Error())
+	}
 
-	// Map not found errors to NotFound
-	case constants.ErrProductNotFound,
-		constants.ErrPlanNotFound:
-		return status.Error(codes.NotFound, errMsg)
+	if apperrors.IsDatabaseError(err) {
+		return status.Error(codes.Internal, err.Error())
+	}
 
 	// Default to Internal for unknown errors
-	default:
-		if strings.Contains(errMsg, "not found") {
-			return status.Error(codes.NotFound, errMsg)
-		}
-		return status.Error(codes.Internal, errMsg)
-	}
+	return status.Error(codes.Internal, err.Error())
 }
 

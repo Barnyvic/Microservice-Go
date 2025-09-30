@@ -1,30 +1,47 @@
 # Product Microservice with gRPC
 
-A production-ready product microservice built with Go, gRPC, and GORM following clean architecture principles.
+A production-ready product microservice built with Go, gRPC, and GORM following clean architecture principles and best practices.
 
 ## Table of Contents
 
 - [Features](#features)
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Running the Server](#running-the-server)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
+- [Error Handling](#error-handling)
 - [Documentation Used](#documentation-used)
 - [Project Structure](#project-structure)
 
 ## Features
 
+### Core Functionality
+
 - **gRPC API** for Product and Subscription management
-- **Clean Architecture** with separation of concerns (handlers, services, repositories)
-- **GORM** for database operations with support for PostgreSQL and SQLite
+- **10 gRPC Endpoints** (5 for Products, 5 for Subscriptions)
 - **UUID** primary keys with automatic generation
 - **Foreign key relationships** with cascade delete
-- **Comprehensive testing** (unit tests for services, repositories, and handlers)
-- **Database migrations** with GORM AutoMigrate
 - **Pagination** support for list operations
 - **Type filtering** for products
+
+### Architecture & Code Quality
+
+- **Clean Architecture** with clear separation of concerns
+- **Custom Error Types** for better error handling
+- **Structured Logging** with clear status indicators
+- **Graceful Shutdown** with configurable timeout
+- **Connection Pooling** for PostgreSQL
+- **Input Validation** at service layer
+- **Comprehensive Testing** (unit tests for all layers)
+
+### Database Support
+
+- **PostgreSQL** (production)
+- **SQLite** (development/testing)
+- **GORM** for database operations
+- **Automatic migrations** with GORM AutoMigrate
 
 ## Architecture
 

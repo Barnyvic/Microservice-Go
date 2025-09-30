@@ -21,6 +21,10 @@ import (
 )
 
 func main() {
+	log.Println("========================================")
+	log.Println("  Product Microservice Starting...")
+	log.Println("========================================")
+
 	// Database configuration
 	dbConfig := database.Config{
 		Driver:   getEnv("DB_DRIVER", constants.DefaultDBDriver),
@@ -35,12 +39,12 @@ func main() {
 	// Initialize database
 	db, err := database.NewDatabase(dbConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("✗ Failed to connect to database: %v", err)
 	}
 
 	// Run migrations
 	if err := database.RunMigrations(db); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		log.Fatalf("✗ Failed to run migrations: %v", err)
 	}
 
 	// Initialize repositories
@@ -69,15 +73,18 @@ func main() {
 	port := getEnv("PORT", constants.DefaultGRPCPort)
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", port, err)
+		log.Fatalf("✗ Failed to listen on port %s: %v", port, err)
 	}
 
-	log.Printf("gRPC server listening on port %s", port)
+	log.Println("========================================")
+	log.Printf("✓ gRPC server listening on port %s", port)
+	log.Println("✓ Server ready to accept connections")
+	log.Println("========================================")
 
 	// Setup graceful shutdown
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
+			log.Fatalf("✗ Failed to serve: %v", err)
 		}
 	}()
 
@@ -86,7 +93,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down gRPC server...")
+	log.Println("\n========================================")
+	log.Println("  Shutting down gRPC server...")
+	log.Println("========================================")
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), constants.ShutdownTimeout*time.Second)
@@ -100,11 +109,15 @@ func main() {
 
 	select {
 	case <-done:
-		log.Println("Server gracefully stopped")
+		log.Println("✓ Server gracefully stopped")
 	case <-ctx.Done():
-		log.Println("Shutdown timeout exceeded, forcing stop")
+		log.Println("⚠ Shutdown timeout exceeded, forcing stop")
 		grpcServer.Stop()
 	}
+
+	log.Println("========================================")
+	log.Println("  Server shutdown complete")
+	log.Println("========================================")
 }
 
 // getEnv gets an environment variable or returns a default value

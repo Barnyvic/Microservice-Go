@@ -68,7 +68,7 @@ func TestCreateProduct_EmptyName(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, product)
-	assert.Equal(t, "product name is required", err.Error())
+	assert.Contains(t, err.Error(), "product name is required")
 }
 
 func TestCreateProduct_NegativePrice(t *testing.T) {
@@ -79,7 +79,7 @@ func TestCreateProduct_NegativePrice(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, product)
-	assert.Equal(t, "price cannot be negative", err.Error())
+	assert.Contains(t, err.Error(), "price cannot be negative")
 }
 
 func TestGetProduct_Success(t *testing.T) {
@@ -114,7 +114,7 @@ func TestGetProduct_InvalidID(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, product)
-	assert.Equal(t, "invalid product ID format", err.Error())
+	assert.Contains(t, err.Error(), "invalid product ID format")
 }
 
 func TestGetProduct_NotFound(t *testing.T) {
@@ -136,6 +136,16 @@ func TestDeleteProduct_Success(t *testing.T) {
 	service := NewProductService(mockRepo)
 
 	productID := uuid.New()
+	expectedProduct := &models.Product{
+		ID:          productID,
+		Name:        "Test Product",
+		Description: "Test Description",
+		Price:       99.99,
+		ProductType: "digital",
+	}
+
+	// Mock the GetByID call that happens before delete
+	mockRepo.On("GetByID", productID).Return(expectedProduct, nil)
 	mockRepo.On("Delete", productID).Return(nil)
 
 	err := service.DeleteProduct(productID.String())

@@ -27,7 +27,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	fmt.Println("=== Product Microservice Client Example ===\n")
+	fmt.Println("=== Product Microservice Client Example ===")
 
 	// 1. Create a product
 	fmt.Println("1. Creating a product...")
@@ -123,7 +123,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create second product: %v", err)
 	}
-	fmt.Println("✓ Created second product\n")
+	fmt.Println("✓ Created second product")
 
 	// 7. List all products
 	fmt.Println("7. Listing all products...")
