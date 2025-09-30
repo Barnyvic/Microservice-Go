@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package subscription;
+
+option go_package = "github.com/microservice-go/product-service/proto/subscription";
+
+import "google/protobuf/timestamp.proto";
+
+// Subscription Service Definition
+service SubscriptionService {
+  rpc CreateSubscriptionPlan(CreateSubscriptionPlanRequest) returns (SubscriptionPlanResponse);
+  rpc GetSubscriptionPlan(GetSubscriptionPlanRequest) returns (SubscriptionPlanResponse);
+  rpc UpdateSubscriptionPlan(UpdateSubscriptionPlanRequest) returns (SubscriptionPlanResponse);
+  rpc DeleteSubscriptionPlan(DeleteSubscriptionPlanRequest) returns (DeleteSubscriptionPlanResponse);
+  rpc ListSubscriptionPlans(ListSubscriptionPlansRequest) returns (ListSubscriptionPlansResponse);
+}
+
+// Subscription Plan Messages
+message SubscriptionPlan {
+  string id = 1;
+  string product_id = 2;
+  string plan_name = 3;
+  int32 duration = 4; // in days
+  double price = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message CreateSubscriptionPlanRequest {
+  string product_id = 1;
+  string plan_name = 2;
+  int32 duration = 3;
+  double price = 4;
+}
+
+message GetSubscriptionPlanRequest {
+  string id = 1;
+}
+
+message UpdateSubscriptionPlanRequest {
+  string id = 1;
+  string product_id = 2;
+  string plan_name = 3;
+  int32 duration = 4;
+  double price = 5;
+}
+
+message DeleteSubscriptionPlanRequest {
+  string id = 1;
+}
+
+message DeleteSubscriptionPlanResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListSubscriptionPlansRequest {
+  string product_id = 1; // filter by product
+}
+
+message ListSubscriptionPlansResponse {
+  repeated SubscriptionPlan plans = 1;
+  int32 total = 2;
+}
+
+message SubscriptionPlanResponse {
+  SubscriptionPlan plan = 1;
+}
+
