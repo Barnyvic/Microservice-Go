@@ -99,4 +99,3 @@ func (r *productRepository) List(productType string, page, pageSize int) ([]mode
 
 	return products, total, nil
 }
-

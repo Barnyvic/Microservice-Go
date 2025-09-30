@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/microservice-go/product-service/internal/constants"
 	"github.com/microservice-go/product-service/internal/database"
 	"github.com/microservice-go/product-service/internal/handler"
 	"github.com/microservice-go/product-service/internal/repository"
@@ -18,13 +23,13 @@ import (
 func main() {
 	// Database configuration
 	dbConfig := database.Config{
-		Driver:   getEnv("DB_DRIVER", "sqlite"),
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
-		DBName:   getEnv("DB_NAME", "products.db"),
-		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		Driver:   getEnv("DB_DRIVER", constants.DefaultDBDriver),
+		Host:     getEnv("DB_HOST", constants.DefaultDBHost),
+		Port:     getEnv("DB_PORT", constants.DefaultDBPort),
+		User:     getEnv("DB_USER", constants.DefaultDBUser),
+		Password: getEnv("DB_PASSWORD", constants.DefaultDBPassword),
+		DBName:   getEnv("DB_NAME", constants.DefaultDBName),
+		SSLMode:  getEnv("DB_SSLMODE", constants.DefaultDBSSLMode),
 	}
 
 	// Initialize database
@@ -61,15 +66,44 @@ func main() {
 	reflection.Register(grpcServer)
 
 	// Start server
-	port := getEnv("PORT", "50051")
+	port := getEnv("PORT", constants.DefaultGRPCPort)
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("Failed to listen on port %s: %v", port, err)
 	}
 
 	log.Printf("gRPC server listening on port %s", port)
-	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
+
+	// Setup graceful shutdown
+	go func() {
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down gRPC server...")
+
+	// Graceful shutdown with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), constants.ShutdownTimeout*time.Second)
+	defer cancel()
+
+	done := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Println("Server gracefully stopped")
+	case <-ctx.Done():
+		log.Println("Shutdown timeout exceeded, forcing stop")
+		grpcServer.Stop()
 	}
 }
 
@@ -81,4 +115,3 @@ func getEnv(key, defaultValue string) string {
 	}
 	return value
 }
-

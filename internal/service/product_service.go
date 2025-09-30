@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/microservice-go/product-service/internal/constants"
 	"github.com/microservice-go/product-service/internal/models"
 	"github.com/microservice-go/product-service/internal/repository"
 )
@@ -29,14 +30,8 @@ func NewProductService(repo repository.ProductRepository) ProductService {
 
 // CreateProduct creates a new product
 func (s *productService) CreateProduct(name, description string, price float64, productType string) (*models.Product, error) {
-	if name == "" {
-		return nil, errors.New("product name is required")
-	}
-	if price < 0 {
-		return nil, errors.New("price cannot be negative")
-	}
-	if productType == "" {
-		return nil, errors.New("product type is required")
+	if err := validateProductInput(name, price, productType); err != nil {
+		return nil, err
 	}
 
 	product := &models.Product{
@@ -57,7 +52,7 @@ func (s *productService) CreateProduct(name, description string, price float64, 
 func (s *productService) GetProduct(id string) (*models.Product, error) {
 	productID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, errors.New("invalid product ID format")
+		return nil, errors.New(constants.ErrInvalidProductID)
 	}
 
 	return s.repo.GetByID(productID)
@@ -67,17 +62,11 @@ func (s *productService) GetProduct(id string) (*models.Product, error) {
 func (s *productService) UpdateProduct(id, name, description string, price float64, productType string) (*models.Product, error) {
 	productID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, errors.New("invalid product ID format")
+		return nil, errors.New(constants.ErrInvalidProductID)
 	}
 
-	if name == "" {
-		return nil, errors.New("product name is required")
-	}
-	if price < 0 {
-		return nil, errors.New("price cannot be negative")
-	}
-	if productType == "" {
-		return nil, errors.New("product type is required")
+	if err := validateProductInput(name, price, productType); err != nil {
+		return nil, err
 	}
 
 	product := &models.Product{
@@ -99,7 +88,7 @@ func (s *productService) UpdateProduct(id, name, description string, price float
 func (s *productService) DeleteProduct(id string) error {
 	productID, err := uuid.Parse(id)
 	if err != nil {
-		return errors.New("invalid product ID format")
+		return errors.New(constants.ErrInvalidProductID)
 	}
 
 	return s.repo.Delete(productID)
@@ -107,16 +96,41 @@ func (s *productService) DeleteProduct(id string) error {
 
 // ListProducts retrieves a list of products with optional filtering
 func (s *productService) ListProducts(productType string, page, pageSize int) ([]models.Product, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 10
-	}
-	if pageSize > 100 {
-		pageSize = 100
-	}
+	page = normalizePage(page)
+	pageSize = normalizePageSize(pageSize)
 
 	return s.repo.List(productType, page, pageSize)
 }
 
+// validateProductInput validates product input fields
+func validateProductInput(name string, price float64, productType string) error {
+	if name == "" {
+		return errors.New(constants.ErrProductNameRequired)
+	}
+	if price < 0 {
+		return errors.New(constants.ErrPriceNegative)
+	}
+	if productType == "" {
+		return errors.New(constants.ErrProductTypeRequired)
+	}
+	return nil
+}
+
+// normalizePage ensures page number is within valid range
+func normalizePage(page int) int {
+	if page < constants.MinPageSize {
+		return constants.DefaultPage
+	}
+	return page
+}
+
+// normalizePageSize ensures page size is within valid range
+func normalizePageSize(pageSize int) int {
+	if pageSize < constants.MinPageSize {
+		return constants.DefaultPageSize
+	}
+	if pageSize > constants.MaxPageSize {
+		return constants.MaxPageSize
+	}
+	return pageSize
+}

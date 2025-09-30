@@ -5,9 +5,6 @@ import (
 
 	"github.com/microservice-go/product-service/internal/service"
 	pb "github.com/microservice-go/product-service/proto/product"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ProductHandler implements the gRPC ProductService
@@ -25,19 +22,11 @@ func NewProductHandler(service service.ProductService) *ProductHandler {
 func (h *ProductHandler) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.ProductResponse, error) {
 	product, err := h.service.CreateProduct(req.Name, req.Description, req.Price, req.ProductType)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create product: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &pb.ProductResponse{
-		Product: &pb.Product{
-			Id:          product.ID.String(),
-			Name:        product.Name,
-			Description: product.Description,
-			Price:       product.Price,
-			ProductType: product.ProductType,
-			CreatedAt:   timestamppb.New(product.CreatedAt),
-			UpdatedAt:   timestamppb.New(product.UpdatedAt),
-		},
+		Product: toProductProto(product),
 	}, nil
 }
 
@@ -45,19 +34,11 @@ func (h *ProductHandler) CreateProduct(ctx context.Context, req *pb.CreateProduc
 func (h *ProductHandler) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.ProductResponse, error) {
 	product, err := h.service.GetProduct(req.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "product not found: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &pb.ProductResponse{
-		Product: &pb.Product{
-			Id:          product.ID.String(),
-			Name:        product.Name,
-			Description: product.Description,
-			Price:       product.Price,
-			ProductType: product.ProductType,
-			CreatedAt:   timestamppb.New(product.CreatedAt),
-			UpdatedAt:   timestamppb.New(product.UpdatedAt),
-		},
+		Product: toProductProto(product),
 	}, nil
 }
 
@@ -65,19 +46,11 @@ func (h *ProductHandler) GetProduct(ctx context.Context, req *pb.GetProductReque
 func (h *ProductHandler) UpdateProduct(ctx context.Context, req *pb.UpdateProductRequest) (*pb.ProductResponse, error) {
 	product, err := h.service.UpdateProduct(req.Id, req.Name, req.Description, req.Price, req.ProductType)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update product: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &pb.ProductResponse{
-		Product: &pb.Product{
-			Id:          product.ID.String(),
-			Name:        product.Name,
-			Description: product.Description,
-			Price:       product.Price,
-			ProductType: product.ProductType,
-			CreatedAt:   timestamppb.New(product.CreatedAt),
-			UpdatedAt:   timestamppb.New(product.UpdatedAt),
-		},
+		Product: toProductProto(product),
 	}, nil
 }
 
@@ -88,7 +61,7 @@ func (h *ProductHandler) DeleteProduct(ctx context.Context, req *pb.DeleteProduc
 		return &pb.DeleteProductResponse{
 			Success: false,
 			Message: err.Error(),
-		}, status.Errorf(codes.Internal, "failed to delete product: %v", err)
+		}, mapServiceError(err)
 	}
 
 	return &pb.DeleteProductResponse{
@@ -101,20 +74,12 @@ func (h *ProductHandler) DeleteProduct(ctx context.Context, req *pb.DeleteProduc
 func (h *ProductHandler) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
 	products, total, err := h.service.ListProducts(req.ProductType, int(req.Page), int(req.PageSize))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list products: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	pbProducts := make([]*pb.Product, len(products))
-	for i, product := range products {
-		pbProducts[i] = &pb.Product{
-			Id:          product.ID.String(),
-			Name:        product.Name,
-			Description: product.Description,
-			Price:       product.Price,
-			ProductType: product.ProductType,
-			CreatedAt:   timestamppb.New(product.CreatedAt),
-			UpdatedAt:   timestamppb.New(product.UpdatedAt),
-		}
+	for i := range products {
+		pbProducts[i] = toProductProto(&products[i])
 	}
 
 	return &pb.ListProductsResponse{
@@ -122,4 +87,3 @@ func (h *ProductHandler) ListProducts(ctx context.Context, req *pb.ListProductsR
 		Total:    int32(total),
 	}, nil
 }
-

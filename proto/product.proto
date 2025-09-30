@@ -68,4 +68,3 @@ message ListProductsResponse {
 message ProductResponse {
   Product product = 1;
 }
-

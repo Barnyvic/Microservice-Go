@@ -66,4 +66,3 @@ message ListSubscriptionPlansResponse {
 message SubscriptionPlanResponse {
   SubscriptionPlan plan = 1;
 }
-

@@ -78,4 +78,3 @@ func (r *subscriptionRepository) ListByProductID(productID uuid.UUID) ([]models.
 	}
 	return plans, nil
 }
-

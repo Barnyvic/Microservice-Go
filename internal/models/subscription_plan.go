@@ -34,4 +34,3 @@ func (s *SubscriptionPlan) BeforeCreate(tx *gorm.DB) error {
 func (SubscriptionPlan) TableName() string {
 	return "subscription_plans"
 }
-

@@ -5,9 +5,6 @@ import (
 
 	"github.com/microservice-go/product-service/internal/service"
 	pb "github.com/microservice-go/product-service/proto/subscription"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // SubscriptionHandler implements the gRPC SubscriptionService
@@ -25,19 +22,11 @@ func NewSubscriptionHandler(service service.SubscriptionService) *SubscriptionHa
 func (h *SubscriptionHandler) CreateSubscriptionPlan(ctx context.Context, req *pb.CreateSubscriptionPlanRequest) (*pb.SubscriptionPlanResponse, error) {
 	plan, err := h.service.CreateSubscriptionPlan(req.ProductId, req.PlanName, int(req.Duration), req.Price)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create subscription plan: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &pb.SubscriptionPlanResponse{
-		Plan: &pb.SubscriptionPlan{
-			Id:        plan.ID.String(),
-			ProductId: plan.ProductID.String(),
-			PlanName:  plan.PlanName,
-			Duration:  int32(plan.Duration),
-			Price:     plan.Price,
-			CreatedAt: timestamppb.New(plan.CreatedAt),
-			UpdatedAt: timestamppb.New(plan.UpdatedAt),
-		},
+		Plan: toSubscriptionPlanProto(plan),
 	}, nil
 }
 
@@ -45,19 +34,11 @@ func (h *SubscriptionHandler) CreateSubscriptionPlan(ctx context.Context, req *p
 func (h *SubscriptionHandler) GetSubscriptionPlan(ctx context.Context, req *pb.GetSubscriptionPlanRequest) (*pb.SubscriptionPlanResponse, error) {
 	plan, err := h.service.GetSubscriptionPlan(req.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "subscription plan not found: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &pb.SubscriptionPlanResponse{
-		Plan: &pb.SubscriptionPlan{
-			Id:        plan.ID.String(),
-			ProductId: plan.ProductID.String(),
-			PlanName:  plan.PlanName,
-			Duration:  int32(plan.Duration),
-			Price:     plan.Price,
-			CreatedAt: timestamppb.New(plan.CreatedAt),
-			UpdatedAt: timestamppb.New(plan.UpdatedAt),
-		},
+		Plan: toSubscriptionPlanProto(plan),
 	}, nil
 }
 
@@ -65,19 +46,11 @@ func (h *SubscriptionHandler) GetSubscriptionPlan(ctx context.Context, req *pb.G
 func (h *SubscriptionHandler) UpdateSubscriptionPlan(ctx context.Context, req *pb.UpdateSubscriptionPlanRequest) (*pb.SubscriptionPlanResponse, error) {
 	plan, err := h.service.UpdateSubscriptionPlan(req.Id, req.ProductId, req.PlanName, int(req.Duration), req.Price)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update subscription plan: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &pb.SubscriptionPlanResponse{
-		Plan: &pb.SubscriptionPlan{
-			Id:        plan.ID.String(),
-			ProductId: plan.ProductID.String(),
-			PlanName:  plan.PlanName,
-			Duration:  int32(plan.Duration),
-			Price:     plan.Price,
-			CreatedAt: timestamppb.New(plan.CreatedAt),
-			UpdatedAt: timestamppb.New(plan.UpdatedAt),
-		},
+		Plan: toSubscriptionPlanProto(plan),
 	}, nil
 }
 
@@ -88,7 +61,7 @@ func (h *SubscriptionHandler) DeleteSubscriptionPlan(ctx context.Context, req *p
 		return &pb.DeleteSubscriptionPlanResponse{
 			Success: false,
 			Message: err.Error(),
-		}, status.Errorf(codes.Internal, "failed to delete subscription plan: %v", err)
+		}, mapServiceError(err)
 	}
 
 	return &pb.DeleteSubscriptionPlanResponse{
@@ -101,20 +74,12 @@ func (h *SubscriptionHandler) DeleteSubscriptionPlan(ctx context.Context, req *p
 func (h *SubscriptionHandler) ListSubscriptionPlans(ctx context.Context, req *pb.ListSubscriptionPlansRequest) (*pb.ListSubscriptionPlansResponse, error) {
 	plans, err := h.service.ListSubscriptionPlans(req.ProductId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list subscription plans: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	pbPlans := make([]*pb.SubscriptionPlan, len(plans))
-	for i, plan := range plans {
-		pbPlans[i] = &pb.SubscriptionPlan{
-			Id:        plan.ID.String(),
-			ProductId: plan.ProductID.String(),
-			PlanName:  plan.PlanName,
-			Duration:  int32(plan.Duration),
-			Price:     plan.Price,
-			CreatedAt: timestamppb.New(plan.CreatedAt),
-			UpdatedAt: timestamppb.New(plan.UpdatedAt),
-		}
+	for i := range plans {
+		pbPlans[i] = toSubscriptionPlanProto(&plans[i])
 	}
 
 	return &pb.ListSubscriptionPlansResponse{
@@ -122,4 +87,3 @@ func (h *SubscriptionHandler) ListSubscriptionPlans(ctx context.Context, req *pb
 		Total: int32(len(plans)),
 	}, nil
 }
-

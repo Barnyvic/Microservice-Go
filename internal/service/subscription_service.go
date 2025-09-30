@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/microservice-go/product-service/internal/constants"
 	"github.com/microservice-go/product-service/internal/models"
 	"github.com/microservice-go/product-service/internal/repository"
 )
@@ -33,25 +34,19 @@ func NewSubscriptionService(repo repository.SubscriptionRepository, productRepo 
 
 // CreateSubscriptionPlan creates a new subscription plan
 func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string, duration int, price float64) (*models.SubscriptionPlan, error) {
-	if planName == "" {
-		return nil, errors.New("plan name is required")
-	}
-	if duration <= 0 {
-		return nil, errors.New("duration must be positive")
-	}
-	if price < 0 {
-		return nil, errors.New("price cannot be negative")
+	if err := validateSubscriptionInput(planName, duration, price); err != nil {
+		return nil, err
 	}
 
 	prodID, err := uuid.Parse(productID)
 	if err != nil {
-		return nil, errors.New("invalid product ID format")
+		return nil, errors.New(constants.ErrInvalidProductID)
 	}
 
 	// Verify product exists
 	_, err = s.productRepo.GetByID(prodID)
 	if err != nil {
-		return nil, errors.New("product not found")
+		return nil, errors.New(constants.ErrProductNotFound)
 	}
 
 	plan := &models.SubscriptionPlan{
@@ -72,7 +67,7 @@ func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string,
 func (s *subscriptionService) GetSubscriptionPlan(id string) (*models.SubscriptionPlan, error) {
 	planID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, errors.New("invalid subscription plan ID format")
+		return nil, errors.New(constants.ErrInvalidPlanID)
 	}
 
 	return s.repo.GetByID(planID)
@@ -82,28 +77,22 @@ func (s *subscriptionService) GetSubscriptionPlan(id string) (*models.Subscripti
 func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName string, duration int, price float64) (*models.SubscriptionPlan, error) {
 	planID, err := uuid.Parse(id)
 	if err != nil {
-		return nil, errors.New("invalid subscription plan ID format")
+		return nil, errors.New(constants.ErrInvalidPlanID)
 	}
 
-	if planName == "" {
-		return nil, errors.New("plan name is required")
-	}
-	if duration <= 0 {
-		return nil, errors.New("duration must be positive")
-	}
-	if price < 0 {
-		return nil, errors.New("price cannot be negative")
+	if err := validateSubscriptionInput(planName, duration, price); err != nil {
+		return nil, err
 	}
 
 	prodID, err := uuid.Parse(productID)
 	if err != nil {
-		return nil, errors.New("invalid product ID format")
+		return nil, errors.New(constants.ErrInvalidProductID)
 	}
 
 	// Verify product exists
 	_, err = s.productRepo.GetByID(prodID)
 	if err != nil {
-		return nil, errors.New("product not found")
+		return nil, errors.New(constants.ErrProductNotFound)
 	}
 
 	plan := &models.SubscriptionPlan{
@@ -125,7 +114,7 @@ func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName str
 func (s *subscriptionService) DeleteSubscriptionPlan(id string) error {
 	planID, err := uuid.Parse(id)
 	if err != nil {
-		return errors.New("invalid subscription plan ID format")
+		return errors.New(constants.ErrInvalidPlanID)
 	}
 
 	return s.repo.Delete(planID)
@@ -135,9 +124,22 @@ func (s *subscriptionService) DeleteSubscriptionPlan(id string) error {
 func (s *subscriptionService) ListSubscriptionPlans(productID string) ([]models.SubscriptionPlan, error) {
 	prodID, err := uuid.Parse(productID)
 	if err != nil {
-		return nil, errors.New("invalid product ID format")
+		return nil, errors.New(constants.ErrInvalidProductID)
 	}
 
 	return s.repo.ListByProductID(prodID)
 }
 
+// validateSubscriptionInput validates subscription plan input fields
+func validateSubscriptionInput(planName string, duration int, price float64) error {
+	if planName == "" {
+		return errors.New(constants.ErrPlanNameRequired)
+	}
+	if duration <= 0 {
+		return errors.New(constants.ErrDurationPositive)
+	}
+	if price < 0 {
+		return errors.New(constants.ErrPriceNegative)
+	}
+	return nil
+}

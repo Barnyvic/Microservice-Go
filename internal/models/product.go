@@ -35,4 +35,3 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 func (Product) TableName() string {
 	return "products"
 }
-
