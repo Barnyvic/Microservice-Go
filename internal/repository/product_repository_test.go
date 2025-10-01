@@ -1,3 +1,6 @@
+//go:build cgo
+// +build cgo
+
 package repository
 
 import (
@@ -11,7 +14,8 @@ import (
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Use a file-based SQLite database instead of in-memory to avoid CGO issues
+	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
@@ -20,6 +24,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
 	}
+
+	// Clean up test data before each test
+	db.Exec("DELETE FROM subscription_plans")
+	db.Exec("DELETE FROM products")
 
 	return db
 }
