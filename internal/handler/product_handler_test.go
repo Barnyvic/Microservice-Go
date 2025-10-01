@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockProductService is a mock implementation of ProductService
 type MockProductService struct {
 	mock.Mock
 }

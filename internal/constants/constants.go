@@ -1,12 +1,11 @@
 package constants
 
-// Pagination constants
 const (
 	DefaultPage         = 1
 	DefaultPageSize     = 10
 	MaxPageSize         = 100
 	MinPageSize         = 1
-	ShutdownTimeout     = 30 // seconds
+	ShutdownTimeout     = 30 
 	DefaultGRPCPort     = "50051"
 	DefaultDBDriver     = "sqlite"
 	DefaultDBName       = "products.db"
@@ -17,7 +16,6 @@ const (
 	DefaultDBSSLMode    = "disable"
 )
 
-// Error messages
 const (
 	ErrProductNameRequired     = "product name is required"
 	ErrPriceNegative          = "price cannot be negative"

@@ -7,18 +7,15 @@ import (
 	pb "github.com/microservice-go/product-service/proto/subscription"
 )
 
-// SubscriptionHandler implements the gRPC SubscriptionService
 type SubscriptionHandler struct {
 	pb.UnimplementedSubscriptionServiceServer
 	service service.SubscriptionService
 }
 
-// NewSubscriptionHandler creates a new SubscriptionHandler
 func NewSubscriptionHandler(service service.SubscriptionService) *SubscriptionHandler {
 	return &SubscriptionHandler{service: service}
 }
 
-// CreateSubscriptionPlan handles the CreateSubscriptionPlan RPC
 func (h *SubscriptionHandler) CreateSubscriptionPlan(ctx context.Context, req *pb.CreateSubscriptionPlanRequest) (*pb.SubscriptionPlanResponse, error) {
 	plan, err := h.service.CreateSubscriptionPlan(req.ProductId, req.PlanName, int(req.Duration), req.Price)
 	if err != nil {
@@ -30,7 +27,6 @@ func (h *SubscriptionHandler) CreateSubscriptionPlan(ctx context.Context, req *p
 	}, nil
 }
 
-// GetSubscriptionPlan handles the GetSubscriptionPlan RPC
 func (h *SubscriptionHandler) GetSubscriptionPlan(ctx context.Context, req *pb.GetSubscriptionPlanRequest) (*pb.SubscriptionPlanResponse, error) {
 	plan, err := h.service.GetSubscriptionPlan(req.Id)
 	if err != nil {
@@ -42,7 +38,6 @@ func (h *SubscriptionHandler) GetSubscriptionPlan(ctx context.Context, req *pb.G
 	}, nil
 }
 
-// UpdateSubscriptionPlan handles the UpdateSubscriptionPlan RPC
 func (h *SubscriptionHandler) UpdateSubscriptionPlan(ctx context.Context, req *pb.UpdateSubscriptionPlanRequest) (*pb.SubscriptionPlanResponse, error) {
 	plan, err := h.service.UpdateSubscriptionPlan(req.Id, req.ProductId, req.PlanName, int(req.Duration), req.Price)
 	if err != nil {
@@ -54,7 +49,6 @@ func (h *SubscriptionHandler) UpdateSubscriptionPlan(ctx context.Context, req *p
 	}, nil
 }
 
-// DeleteSubscriptionPlan handles the DeleteSubscriptionPlan RPC
 func (h *SubscriptionHandler) DeleteSubscriptionPlan(ctx context.Context, req *pb.DeleteSubscriptionPlanRequest) (*pb.DeleteSubscriptionPlanResponse, error) {
 	err := h.service.DeleteSubscriptionPlan(req.Id)
 	if err != nil {
@@ -70,7 +64,6 @@ func (h *SubscriptionHandler) DeleteSubscriptionPlan(ctx context.Context, req *p
 	}, nil
 }
 
-// ListSubscriptionPlans handles the ListSubscriptionPlans RPC
 func (h *SubscriptionHandler) ListSubscriptionPlans(ctx context.Context, req *pb.ListSubscriptionPlansRequest) (*pb.ListSubscriptionPlansResponse, error) {
 	plans, err := h.service.ListSubscriptionPlans(req.ProductId)
 	if err != nil {

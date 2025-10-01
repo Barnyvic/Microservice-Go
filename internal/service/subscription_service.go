@@ -7,7 +7,6 @@ import (
 	"github.com/microservice-go/product-service/internal/repository"
 )
 
-// SubscriptionService defines the interface for subscription plan business logic
 type SubscriptionService interface {
 	CreateSubscriptionPlan(productID, planName string, duration int, price float64) (*models.SubscriptionPlan, error)
 	GetSubscriptionPlan(id string) (*models.SubscriptionPlan, error)
@@ -16,13 +15,11 @@ type SubscriptionService interface {
 	ListSubscriptionPlans(productID string) ([]models.SubscriptionPlan, error)
 }
 
-// subscriptionService implements SubscriptionService interface
 type subscriptionService struct {
 	repo        repository.SubscriptionRepository
 	productRepo repository.ProductRepository
 }
 
-// NewSubscriptionService creates a new instance of SubscriptionService
 func NewSubscriptionService(repo repository.SubscriptionRepository, productRepo repository.ProductRepository) SubscriptionService {
 	return &subscriptionService{
 		repo:        repo,
@@ -41,7 +38,6 @@ func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string,
 		return nil, err
 	}
 
-	// Verify product exists
 	if _, err := s.productRepo.GetByID(prodID); err != nil {
 		return nil, apperrors.NewNotFoundError("Product", productID)
 	}
@@ -60,7 +56,6 @@ func (s *subscriptionService) CreateSubscriptionPlan(productID, planName string,
 	return plan, nil
 }
 
-// GetSubscriptionPlan retrieves a subscription plan by ID
 func (s *subscriptionService) GetSubscriptionPlan(id string) (*models.SubscriptionPlan, error) {
 	planID, err := parsePlanID(id)
 	if err != nil {
@@ -75,14 +70,12 @@ func (s *subscriptionService) GetSubscriptionPlan(id string) (*models.Subscripti
 	return plan, nil
 }
 
-// UpdateSubscriptionPlan updates an existing subscription plan
 func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName string, duration int, price float64) (*models.SubscriptionPlan, error) {
 	planID, err := parsePlanID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Verify plan exists
 	if _, err := s.repo.GetByID(planID); err != nil {
 		return nil, apperrors.NewNotFoundError("SubscriptionPlan", id)
 	}
@@ -96,7 +89,6 @@ func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName str
 		return nil, err
 	}
 
-	// Verify product exists
 	if _, err := s.productRepo.GetByID(prodID); err != nil {
 		return nil, apperrors.NewNotFoundError("Product", productID)
 	}
@@ -116,14 +108,12 @@ func (s *subscriptionService) UpdateSubscriptionPlan(id, productID, planName str
 	return s.repo.GetByID(planID)
 }
 
-// DeleteSubscriptionPlan deletes a subscription plan by ID
 func (s *subscriptionService) DeleteSubscriptionPlan(id string) error {
 	planID, err := parsePlanID(id)
 	if err != nil {
 		return err
 	}
 
-	// Verify plan exists before deletion
 	if _, err := s.repo.GetByID(planID); err != nil {
 		return apperrors.NewNotFoundError("SubscriptionPlan", id)
 	}
@@ -135,7 +125,6 @@ func (s *subscriptionService) DeleteSubscriptionPlan(id string) error {
 	return nil
 }
 
-// ListSubscriptionPlans retrieves all subscription plans for a product
 func (s *subscriptionService) ListSubscriptionPlans(productID string) ([]models.SubscriptionPlan, error) {
 	prodID, err := parseProductID(productID)
 	if err != nil {
@@ -150,7 +139,6 @@ func (s *subscriptionService) ListSubscriptionPlans(productID string) ([]models.
 	return plans, nil
 }
 
-// parsePlanID parses and validates a subscription plan ID
 func parsePlanID(id string) (uuid.UUID, error) {
 	if id == "" {
 		return uuid.Nil, apperrors.NewValidationError("id", "subscription plan ID is required")
@@ -164,7 +152,6 @@ func parsePlanID(id string) (uuid.UUID, error) {
 	return planID, nil
 }
 
-// validateSubscriptionInput validates subscription plan input fields
 func validateSubscriptionInput(planName string, duration int, price float64) error {
 	if planName == "" {
 		return apperrors.NewValidationError("planName", "plan name is required")
@@ -175,7 +162,7 @@ func validateSubscriptionInput(planName string, duration int, price float64) err
 	if duration <= 0 {
 		return apperrors.NewValidationError("duration", "duration must be positive")
 	}
-	if duration > 3650 { // Max 10 years
+	if duration > 3650 { 
 		return apperrors.NewValidationError("duration", "duration cannot exceed 3650 days")
 	}
 	if price < 0 {

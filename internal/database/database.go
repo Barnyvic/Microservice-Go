@@ -19,9 +19,8 @@ const (
 	connMaxLifetime = 5 * time.Minute
 )
 
-// Config holds database configuration
 type Config struct {
-	Driver   string // "postgres" or "sqlite"
+	Driver   string 
 	Host     string
 	Port     string
 	User     string
@@ -30,7 +29,6 @@ type Config struct {
 	SSLMode  string
 }
 
-// NewDatabase creates a new database connection with proper configuration
 func NewDatabase(config Config) (*gorm.DB, error) {
 	if config.Driver == "" {
 		return nil, apperrors.NewValidationError("driver", "database driver is required")
@@ -64,7 +62,6 @@ func NewDatabase(config Config) (*gorm.DB, error) {
 		return nil, apperrors.NewDatabaseError("connection", err)
 	}
 
-	// Configure connection pool for better performance
 	if config.Driver == "postgres" {
 		sqlDB, err := db.DB()
 		if err != nil {
@@ -75,11 +72,10 @@ func NewDatabase(config Config) (*gorm.DB, error) {
 		sqlDB.SetConnMaxLifetime(connMaxLifetime)
 	}
 
-	log.Printf("✓ Database connection established (driver: %s)", config.Driver)
+	log.Printf("Database connection established (driver: %s)", config.Driver)
 	return db, nil
 }
 
-// RunMigrations runs database migrations
 func RunMigrations(db *gorm.DB) error {
 	if db == nil {
 		return apperrors.NewValidationError("db", "database connection is nil")
@@ -96,11 +92,10 @@ func RunMigrations(db *gorm.DB) error {
 		return apperrors.NewDatabaseError("migration", err)
 	}
 
-	log.Println("✓ Database migrations completed successfully")
+	log.Println("Database migrations completed successfully")
 	return nil
 }
 
-// validatePostgresConfig validates PostgreSQL configuration
 func validatePostgresConfig(config Config) error {
 	if config.Host == "" {
 		return apperrors.NewValidationError("host", "host is required for PostgreSQL")

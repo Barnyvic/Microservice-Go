@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockProductRepository is a mock implementation of ProductRepository
 type MockProductRepository struct {
 	mock.Mock
 }
@@ -144,7 +143,6 @@ func TestDeleteProduct_Success(t *testing.T) {
 		ProductType: "digital",
 	}
 
-	// Mock the GetByID call that happens before delete
 	mockRepo.On("GetByID", productID).Return(expectedProduct, nil)
 	mockRepo.On("Delete", productID).Return(nil)
 

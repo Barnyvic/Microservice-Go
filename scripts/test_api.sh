@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Script to test the gRPC API using grpcurl
-# Make sure the server is running before executing this script
 
 set -e
 

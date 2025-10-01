@@ -7,18 +7,15 @@ import (
 	pb "github.com/microservice-go/product-service/proto/product"
 )
 
-// ProductHandler implements the gRPC ProductService
 type ProductHandler struct {
 	pb.UnimplementedProductServiceServer
 	service service.ProductService
 }
 
-// NewProductHandler creates a new ProductHandler
 func NewProductHandler(service service.ProductService) *ProductHandler {
 	return &ProductHandler{service: service}
 }
 
-// CreateProduct handles the CreateProduct RPC
 func (h *ProductHandler) CreateProduct(ctx context.Context, req *pb.CreateProductRequest) (*pb.ProductResponse, error) {
 	product, err := h.service.CreateProduct(req.Name, req.Description, req.Price, req.ProductType)
 	if err != nil {
@@ -30,7 +27,6 @@ func (h *ProductHandler) CreateProduct(ctx context.Context, req *pb.CreateProduc
 	}, nil
 }
 
-// GetProduct handles the GetProduct RPC
 func (h *ProductHandler) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.ProductResponse, error) {
 	product, err := h.service.GetProduct(req.Id)
 	if err != nil {
@@ -42,7 +38,6 @@ func (h *ProductHandler) GetProduct(ctx context.Context, req *pb.GetProductReque
 	}, nil
 }
 
-// UpdateProduct handles the UpdateProduct RPC
 func (h *ProductHandler) UpdateProduct(ctx context.Context, req *pb.UpdateProductRequest) (*pb.ProductResponse, error) {
 	product, err := h.service.UpdateProduct(req.Id, req.Name, req.Description, req.Price, req.ProductType)
 	if err != nil {
@@ -54,7 +49,6 @@ func (h *ProductHandler) UpdateProduct(ctx context.Context, req *pb.UpdateProduc
 	}, nil
 }
 
-// DeleteProduct handles the DeleteProduct RPC
 func (h *ProductHandler) DeleteProduct(ctx context.Context, req *pb.DeleteProductRequest) (*pb.DeleteProductResponse, error) {
 	err := h.service.DeleteProduct(req.Id)
 	if err != nil {
@@ -70,7 +64,6 @@ func (h *ProductHandler) DeleteProduct(ctx context.Context, req *pb.DeleteProduc
 	}, nil
 }
 
-// ListProducts handles the ListProducts RPC
 func (h *ProductHandler) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
 	products, total, err := h.service.ListProducts(req.ProductType, int(req.Page), int(req.PageSize))
 	if err != nil {

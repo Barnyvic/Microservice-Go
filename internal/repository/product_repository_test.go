@@ -16,7 +16,6 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
 
-	// Run migrations
 	err = db.AutoMigrate(&models.Product{}, &models.SubscriptionPlan{})
 	if err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
@@ -46,7 +45,6 @@ func TestProductRepository_GetByID(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewProductRepository(db)
 
-	// Create a product first
 	product := &models.Product{
 		Name:        "Test Product",
 		Description: "Test Description",
@@ -56,7 +54,6 @@ func TestProductRepository_GetByID(t *testing.T) {
 	err := repo.Create(product)
 	assert.NoError(t, err)
 
-	// Retrieve the product
 	retrieved, err := repo.GetByID(product.ID)
 
 	assert.NoError(t, err)
@@ -82,7 +79,6 @@ func TestProductRepository_Update(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewProductRepository(db)
 
-	// Create a product first
 	product := &models.Product{
 		Name:        "Original Name",
 		Description: "Original Description",
@@ -92,14 +88,12 @@ func TestProductRepository_Update(t *testing.T) {
 	err := repo.Create(product)
 	assert.NoError(t, err)
 
-	// Update the product
 	product.Name = "Updated Name"
 	product.Price = 149.99
 	err = repo.Update(product)
 
 	assert.NoError(t, err)
 
-	// Verify the update
 	updated, err := repo.GetByID(product.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, "Updated Name", updated.Name)
@@ -110,7 +104,6 @@ func TestProductRepository_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewProductRepository(db)
 
-	// Create a product first
 	product := &models.Product{
 		Name:        "Test Product",
 		Description: "Test Description",
@@ -120,11 +113,9 @@ func TestProductRepository_Delete(t *testing.T) {
 	err := repo.Create(product)
 	assert.NoError(t, err)
 
-	// Delete the product
 	err = repo.Delete(product.ID)
 	assert.NoError(t, err)
 
-	// Verify deletion
 	deleted, err := repo.GetByID(product.ID)
 	assert.Error(t, err)
 	assert.Nil(t, deleted)
@@ -134,7 +125,6 @@ func TestProductRepository_List(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewProductRepository(db)
 
-	// Create multiple products
 	products := []*models.Product{
 		{Name: "Product 1", Price: 10.0, ProductType: "digital"},
 		{Name: "Product 2", Price: 20.0, ProductType: "physical"},
@@ -146,13 +136,11 @@ func TestProductRepository_List(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// List all products
 	allProducts, total, err := repo.List("", 1, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(allProducts))
 	assert.Equal(t, int64(3), total)
 
-	// List filtered by type
 	digitalProducts, total, err := repo.List("digital", 1, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(digitalProducts))
@@ -163,7 +151,6 @@ func TestProductRepository_List_Pagination(t *testing.T) {
 	db := setupTestDB(t)
 	repo := NewProductRepository(db)
 
-	// Create multiple products
 	for i := 0; i < 5; i++ {
 		product := &models.Product{
 			Name:        "Product",
@@ -174,13 +161,11 @@ func TestProductRepository_List_Pagination(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// Test pagination
 	products, total, err := repo.List("", 1, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(products))
 	assert.Equal(t, int64(5), total)
 
-	// Test second page
 	products, total, err = repo.List("", 2, 2)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(products))

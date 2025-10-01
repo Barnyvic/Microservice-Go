@@ -7,7 +7,6 @@ import (
 	"github.com/microservice-go/product-service/internal/repository"
 )
 
-// ProductService defines the interface for product business logic
 type ProductService interface {
 	CreateProduct(name, description string, price float64, productType string) (*models.Product, error)
 	GetProduct(id string) (*models.Product, error)
@@ -16,17 +15,14 @@ type ProductService interface {
 	ListProducts(productType string, page, pageSize int) ([]models.Product, int64, error)
 }
 
-// productService implements ProductService interface
 type productService struct {
 	repo repository.ProductRepository
 }
 
-// NewProductService creates a new instance of ProductService
 func NewProductService(repo repository.ProductRepository) ProductService {
 	return &productService{repo: repo}
 }
 
-// CreateProduct creates a new product with validation
 func (s *productService) CreateProduct(name, description string, price float64, productType string) (*models.Product, error) {
 	if err := validateProductInput(name, price, productType); err != nil {
 		return nil, err
@@ -46,7 +42,6 @@ func (s *productService) CreateProduct(name, description string, price float64, 
 	return product, nil
 }
 
-// GetProduct retrieves a product by ID
 func (s *productService) GetProduct(id string) (*models.Product, error) {
 	productID, err := parseProductID(id)
 	if err != nil {
@@ -61,14 +56,12 @@ func (s *productService) GetProduct(id string) (*models.Product, error) {
 	return product, nil
 }
 
-// UpdateProduct updates an existing product
 func (s *productService) UpdateProduct(id, name, description string, price float64, productType string) (*models.Product, error) {
 	productID, err := parseProductID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Verify product exists
 	if _, err := s.repo.GetByID(productID); err != nil {
 		return nil, apperrors.NewNotFoundError("Product", id)
 	}
@@ -92,14 +85,12 @@ func (s *productService) UpdateProduct(id, name, description string, price float
 	return s.repo.GetByID(productID)
 }
 
-// DeleteProduct deletes a product by ID
 func (s *productService) DeleteProduct(id string) error {
 	productID, err := parseProductID(id)
 	if err != nil {
 		return err
 	}
 
-	// Verify product exists before deletion
 	if _, err := s.repo.GetByID(productID); err != nil {
 		return apperrors.NewNotFoundError("Product", id)
 	}
@@ -111,7 +102,6 @@ func (s *productService) DeleteProduct(id string) error {
 	return nil
 }
 
-// ListProducts retrieves a list of products with optional filtering and pagination
 func (s *productService) ListProducts(productType string, page, pageSize int) ([]models.Product, int64, error) {
 	page = normalizePage(page)
 	pageSize = normalizePageSize(pageSize)
@@ -124,7 +114,6 @@ func (s *productService) ListProducts(productType string, page, pageSize int) ([
 	return products, total, nil
 }
 
-// validateProductInput validates product input fields
 func validateProductInput(name string, price float64, productType string) error {
 	if name == "" {
 		return apperrors.NewValidationError("name", "product name is required")
@@ -141,7 +130,7 @@ func validateProductInput(name string, price float64, productType string) error 
 	return nil
 }
 
-// normalizePage ensures page number is within valid range
+
 func normalizePage(page int) int {
 	if page < constants.MinPageSize {
 		return constants.DefaultPage
@@ -149,7 +138,6 @@ func normalizePage(page int) int {
 	return page
 }
 
-// normalizePageSize ensures page size is within valid range
 func normalizePageSize(pageSize int) int {
 	if pageSize < constants.MinPageSize {
 		return constants.DefaultPageSize

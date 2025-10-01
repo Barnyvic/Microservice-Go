@@ -7,8 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Product represents a product in the system
-// Using GORM's polymorphic associations to support different product types
+
 type Product struct {
 	ID          uuid.UUID `gorm:"type:uuid;primary_key"`
 	Name        string    `gorm:"not null"`
@@ -19,11 +18,9 @@ type Product struct {
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 
-	// One-to-many relationship with SubscriptionPlan
 	SubscriptionPlans []SubscriptionPlan `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE"`
 }
 
-// BeforeCreate hook to generate UUID before creating a product
 func (p *Product) BeforeCreate(tx *gorm.DB) error {
 	if p.ID == uuid.Nil {
 		p.ID = uuid.New()

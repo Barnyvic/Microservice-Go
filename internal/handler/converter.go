@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// toProductProto converts a Product model to a Product protobuf message
 func toProductProto(product *models.Product) *productpb.Product {
 	if product == nil {
 		return nil
@@ -27,7 +26,6 @@ func toProductProto(product *models.Product) *productpb.Product {
 	}
 }
 
-// toSubscriptionPlanProto converts a SubscriptionPlan model to a SubscriptionPlan protobuf message
 func toSubscriptionPlanProto(plan *models.SubscriptionPlan) *subscriptionpb.SubscriptionPlan {
 	if plan == nil {
 		return nil
@@ -44,13 +42,12 @@ func toSubscriptionPlanProto(plan *models.SubscriptionPlan) *subscriptionpb.Subs
 	}
 }
 
-// mapServiceError maps service layer errors to appropriate gRPC status codes
 func mapServiceError(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	// Check for custom error types
+
 	if apperrors.IsValidationError(err) {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -63,7 +60,6 @@ func mapServiceError(err error) error {
 		return status.Error(codes.Internal, err.Error())
 	}
 
-	// Default to Internal for unknown errors
 	return status.Error(codes.Internal, err.Error())
 }
 
