@@ -7,7 +7,7 @@ const (
 	MinPageSize         = 1
 	ShutdownTimeout     = 30 
 	DefaultGRPCPort     = "50051"
-	DefaultDBDriver     = "sqlite"
+	DefaultDBDriver     = "postgres"
 	DefaultDBName       = "products.db"
 	DefaultDBHost       = "localhost"
 	DefaultDBPort       = "5432"

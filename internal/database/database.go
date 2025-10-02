@@ -8,7 +8,6 @@ import (
 	apperrors "github.com/microservice-go/product-service/internal/errors"
 	"github.com/microservice-go/product-service/internal/models"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -49,13 +48,8 @@ func NewDatabase(config Config) (*gorm.DB, error) {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 			config.Host, config.User, config.Password, config.DBName, config.Port, config.SSLMode)
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
-	case "sqlite":
-		if config.DBName == "" {
-			return nil, apperrors.NewValidationError("dbname", "database name is required for SQLite")
-		}
-		db, err = gorm.Open(sqlite.Open(config.DBName), gormConfig)
 	default:
-		return nil, fmt.Errorf("unsupported database driver: %s (supported: postgres, sqlite)", config.Driver)
+		return nil, fmt.Errorf("unsupported database driver: %s (supported: postgres)", config.Driver)
 	}
 
 	if err != nil {

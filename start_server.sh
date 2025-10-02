@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -a
+[ -f .env ] && . ./.env
+set +a
+
 echo "========================================="
 echo "  Building Product Microservice..."
 echo "========================================="
