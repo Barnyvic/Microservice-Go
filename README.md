@@ -117,7 +117,7 @@ Make sure `$GOPATH/bin` is in your PATH.
 1. **Clone the repository:**
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Barnyvic/Microservice-Go
 cd Microservice-Go
 ```
 
@@ -152,7 +152,7 @@ make run
 Or:
 
 ```bash
-go run cmd/server/main.go
+./start_server.sh
 ```
 
 The server will start on port `50051` by default.

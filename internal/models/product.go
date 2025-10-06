@@ -13,7 +13,7 @@ type Product struct {
 	Name        string    `gorm:"not null"`
 	Description string    `gorm:"type:text"`
 	Price       float64   `gorm:"not null"`
-	ProductType string    `gorm:"not null;index"` // For polymorphism support
+	ProductType string    `gorm:"not null;index"` 
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
@@ -28,7 +28,7 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// TableName specifies the table name for Product model
+
 func (Product) TableName() string {
 	return "products"
 }

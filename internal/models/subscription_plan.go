@@ -27,7 +27,6 @@ func (s *SubscriptionPlan) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// TableName specifies the table name for SubscriptionPlan model
 func (SubscriptionPlan) TableName() string {
 	return "subscription_plans"
 }
